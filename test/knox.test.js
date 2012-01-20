@@ -4,7 +4,8 @@
  */
 
 var knox = require('knox')
-  , fs = require('fs');
+  , fs = require('fs')
+  , assert = require('assert') ;
 
 try {
   var auth = JSON.parse(fs.readFileSync('auth', 'ascii'));
@@ -18,11 +19,11 @@ try {
 var jsonFixture = __dirname + '/fixtures/user.json';
 
 module.exports = {
-  'test .version': function(assert){
+  'test .version': function(){
     assert.match(knox.version, /^\d+\.\d+\.\d+$/);
   },
-  
-  'test .createClient() invalid': function(assert){
+
+  'test .createClient() invalid': function(){
     var err;
     try {
       knox.createClient({});
@@ -30,7 +31,7 @@ module.exports = {
       err = e;
     }
     assert.equal('aws "key" required', err.message);
-    
+
     var err;
     try {
       knox.createClient({ key: 'foo' });
@@ -38,7 +39,7 @@ module.exports = {
       err = e;
     }
     assert.equal('aws "secret" required', err.message);
-    
+
     var err;
     try {
       knox.createClient({ key: 'foo', secret: 'bar' });
@@ -47,21 +48,21 @@ module.exports = {
     }
     assert.equal('aws "bucket" required', err.message);
   },
-  
-  'test .createClient() valid': function(assert){
+
+  'test .createClient() valid': function(){
     var client = knox.createClient({
         key: 'foobar'
       , secret: 'baz'
       , bucket: 'misc'
     });
-    
+
     assert.equal('foobar', client.key);
     assert.equal('baz', client.secret);
     assert.equal('misc', client.bucket);
     assert.equal('s3.amazonaws.com', client.endpoint);
   },
-  
-  'test .createClient() custom endpoint': function(assert){
+
+  'test .createClient() custom endpoint': function(){
     var client = knox.createClient({
         key: 'foobar'
       , secret: 'baz'
@@ -72,7 +73,7 @@ module.exports = {
     assert.equal('s3-eu-west-1.amazonaws.com', client.endpoint);
   },
 
-  'test .putFile()': function(assert, done){
+  'test .putFile()': function(done){
     var n = 0;
     client.putFile(jsonFixture, '/test/user2.json', function(err, res){
       assert.ok(!err, 'putFile() got an error!');
@@ -83,8 +84,8 @@ module.exports = {
       }).end();
     });
   },
-  
-  'test .put()': function(assert, done){
+
+  'test .put()': function(done){
     var n = 0;
     fs.stat(jsonFixture, function(err, stat){
       if (err) throw err;
@@ -109,8 +110,8 @@ module.exports = {
       })
     });
   },
-  
-  'test .putStream()': function(assert, done){
+
+  'test .putStream()': function(done){
     var stream = fs.createReadStream(jsonFixture);
     client.putStream(stream, '/test/user.json', function(err, res){
       assert.ok(!err);
@@ -118,8 +119,8 @@ module.exports = {
       done();
     });
   },
-  
-  'test .getFile()': function(assert, done){
+
+  'test .getFile()': function(done){
     client.getFile('/test/user.json', function(err, res){
       assert.ok(!err);
       assert.equal(200, res.statusCode);
@@ -128,8 +129,8 @@ module.exports = {
       done();
     });
   },
-  
-  'test .get()': function(assert, done){
+
+  'test .get()': function(done){
     client.get('/test/user.json').on('response', function(res){
       assert.equal(200, res.statusCode);
       assert.equal('application/json', res.headers['content-type'])
@@ -137,8 +138,8 @@ module.exports = {
       done();
     }).end();
   },
-  
-  'test .head()': function(assert, done){
+
+  'test .head()': function(done){
     client.head('/test/user.json').on('response', function(res){
       assert.equal(200, res.statusCode);
       assert.equal('application/json', res.headers['content-type'])
@@ -146,8 +147,8 @@ module.exports = {
       done();
     }).end();
   },
-  
-  'test .headFile()': function(assert, done){
+
+  'test .headFile()': function(done){
     client.headFile('/test/user.json', function(err, res){
       assert.ok(!err);
       assert.equal(200, res.statusCode);
@@ -156,59 +157,59 @@ module.exports = {
       done();
     });
   },
-  
-  'test .del()': function(assert, done){
+
+  'test .del()': function(done){
     client.del('/test/user.json').on('response', function(res){
       assert.equal(204, res.statusCode);
       done();
     }).end();
   },
-  
-  'test .deleteFile()': function(assert, done){
+
+  'test .deleteFile()': function(done){
     client.deleteFile('/test/user2.json', function(err, res){
       assert.ok(!err);
       assert.equal(204, res.statusCode);
       done();
     });
   },
-  
-  'test .get() 404': function(assert, done){
+
+  'test .get() 404': function(done){
     client.get('/test/user.json').on('response', function(res){
       assert.equal(404, res.statusCode);
       done();
     }).end();
   },
-  
-  'test .head() 404': function(assert, done){
+
+  'test .head() 404': function(done){
     client.head('/test/user.json').on('response', function(res){
       assert.equal(404, res.statusCode);
       done();
     }).end();
   },
-  
-  'test for multipart upload and commit': function(assert, done){
-  	var resourceName = '/test/blob.bin';
+
+  'test for multipart upload and commit': function(done){
+  	var resourceName = '/blob.bin';
   	client.beginUpload(resourceName, function(e, upinfo){
-  		assert.ok(e === null);
+      assert.ok(e === null, "Error occurred in beginUpload");
   		var buf = new Buffer('Hello, world!', 'utf8');
-  		client.putPart(resourceName, upinfo.uploadId, 1, buf, function(e, pinfo){
-  			assert.ok(e === null);
-  			assert.equal(1, pinfo.partNumber);
+  		client.putPart(resourceName, 1, upinfo.uploadId,  buf, function(e, pinfo){
+  		  assert.ok(e === null, "Error occurred in putPart");
+        assert.equal(1, pinfo.partNumber);
   			assert.ok(pinfo.etag !== null);
   			client.completeUpload(resourceName, upinfo.uploadId, [pinfo], function(e, cinfo){
-  				assert.ok(e === null);
+          assert.ok(e === null, "Error occurred in completeUpload");
   				done();
   			});
   		});
   	});
   },
-  
-  'test for multipart upload and abort': function(assert, done){
-  	var resourceName = '/test/blob.bin';
+
+  'test for multipart upload and abort': function(done){
+  	var resourceName = '/blob.bin';
   	client.beginUpload(resourceName, function(e, upinfo){
   		assert.ok(e === null);
   		var buf = new Buffer('Hello, world!', 'utf8');
-  		client.putPart(resourceName, upinfo.uploadId, 1, buf, function(e, pinfo){
+  		client.putPart(resourceName, 1, upinfo.uploadId,  buf, function(e, pinfo){
   			assert.ok(e === null);
   			assert.equal(1, pinfo.partNumber);
   			assert.ok(pinfo.etag !== null);
