@@ -188,7 +188,7 @@ module.exports = {
   },
 
   'test for multipart upload and commit': function(done){
-  	var resourceName = '/blob.bin';
+  	var resourceName = '/test/blob.bin';
   	client.beginUpload(resourceName, function(e, upinfo){
       assert.ok(e === null, "Error occurred in beginUpload");
   		var buf = new Buffer('Hello, world!', 'utf8');
@@ -204,8 +204,22 @@ module.exports = {
   	});
   },
 
+  'test .del() multipart': function(done){
+    client.del('/test/blob.bin').on('response', function(res){
+      assert.equal(204, res.statusCode);
+      done();
+    }).end();
+  },
+
+  'test .get() 404 multipart': function(done){
+    client.get('/test/blob.bin').on('response', function(res){
+      assert.equal(404, res.statusCode);
+      done();
+    }).end();
+  },
+
   'test for multipart upload and abort': function(done){
-  	var resourceName = '/blob.bin';
+  	var resourceName = '/test/blob.bin';
   	client.beginUpload(resourceName, function(e, upinfo){
   		assert.ok(e === null);
   		var buf = new Buffer('Hello, world!', 'utf8');
@@ -219,5 +233,13 @@ module.exports = {
   			});
   		});
   	});
-  }
+  },
+
+  'test .get() 404 multipart aborted': function(done){
+    client.get('/test/blob.bin').on('response', function(res){
+      assert.equal(404, res.statusCode);
+      done();
+    }).end();
+  },
+
 };
